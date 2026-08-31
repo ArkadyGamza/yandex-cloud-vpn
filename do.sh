@@ -11,8 +11,8 @@ QR_CODE_COUNT=0
 CLEANUP_REQUIRED=0
 REDIRECT_ERRORS_CONFIG='2>&1'
 OUTPUT_CONFIG='>/dev/null 2>&1'
-CONNECTION_ATTEMPTS=12
-ATTEMPT_TIMEOUT=5
+CONNECTION_ATTEMPTS=30
+ATTEMPT_TIMEOUT=10
 
 usage() {
     echo "Usage: $0 [-c <1-254>] [-p <1-65535>] [-a <ip-prefix>] [-q <0-254>]" 1>&2
@@ -23,7 +23,7 @@ usage() {
     echo "  -a    the IP network to use, first three octets (default is $IP_ADDRESS_PREFIX)" 1>&2
     echo "  -q    how many configs needs to be displayed as QR code (useful for mobile clients; default is 0)" 1>&2
     echo "  -v    verbose output" 1>&2
-    echo "  -i    initial connection attempts (default is $CONNECTION_ATTEMPTS)" 1>&2
+    echo "  -i    SSH connection attempts (default is $CONNECTION_ATTEMPTS)" 1>&2
     echo "  -t    attempt timeout in seconds (default is $ATTEMPT_TIMEOUT)" 1>&2
     exit 1
 }
@@ -168,7 +168,9 @@ echo 'done!'
 
 echo -n 'Configuring the server... '
 
-if ! ssh -o LogLevel=ERROR -T -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yc-user@$ip "sudo bash -eux $OUTPUT_CONFIG" <<END
+if ! ssh -o LogLevel=ERROR -T -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" \
+    -o "ConnectTimeout=$ATTEMPT_TIMEOUT" -o "ConnectionAttempts=$CONNECTION_ATTEMPTS" \
+    yc-user@$ip "sudo bash -eux $OUTPUT_CONFIG" <<END
 # Wait for server to finish booting
 while ps waux | egrep -q '/[u]sr/bin/cloud-init' || ps waux | egrep -q '/[u]sr/lib/ubuntu-release-upgrader/check-new-release'
 do
